@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-
+	
 	db, err := sql.Open("mysql", "admin:admin@/franchise")
 	if err != nil {
 		fmt.Println(err.Error())
@@ -28,6 +28,11 @@ func main() {
 	delete_stmt := flag.NewFlagSet("delete", flag.ContinueOnError)
 	id_delete := delete_stmt.Int("id", 1, "")
 
+	update_stmt := flag.NewFlagSet("update", flag.ContinueOnError)
+	id_update := update_stmt.Int("id", 1, "")
+	updateLastname := update_stmt.String("lastname", "", "")
+	updateFirstname := update_stmt.String("firstname", "", "")
+
 	switch os.Args[1] {
 	case "select":
 		select_stmt.Parse(os.Args[2:])
@@ -40,82 +45,17 @@ func main() {
 	case "insert":
 		insert_stmt.Parse(os.Args[2:])
 		if *lastnameValue != "" && *firstnameValue != "" {
-			InsertStatement(db, lastnameValue, firstnameValue)
+			fmt.Println(InsertStatement(db, lastnameValue, firstnameValue))
 		} else {
 			fmt.Println("Argument vide")
 		}
 
 	case "delete":
 		delete_stmt.Parse(os.Args[2:])
-		DeleteStatement(db, id_delete)
+		fmt.Println(DeleteStatement(db, id_delete))
+
+	case "update":
+		update_stmt.Parse(os.Args[2:])
+		fmt.Println(UpdateStatement(db, updateLastname, updateFirstname, id_update))
 	}
-}
-
-func SelectStatement(db *sql.DB) {
-
-	var (
-		last_name  string
-		first_name string
-	)
-
-	stmt, err := db.Query("SELECT last_name, first_name FROM employee")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	defer stmt.Close()
-
-	for stmt.Next() {
-		stmt.Scan(&last_name, &first_name)
-		fmt.Println(last_name + " " + first_name)
-	}
-}
-
-func SelectOneStatement(db *sql.DB, id *int) (string, string) {
-
-	var (
-		last_name  string
-		first_name string
-	)
-
-	err := db.QueryRow("SELECT last_name, first_name FROM employee WHERE id = ?", id).Scan(&last_name, &first_name)
-	if err != nil {
-		panic(err.Error())
-	} else if err == sql.ErrNoRows {
-		panic("L'id n'existe pas")
-	}
-
-	return last_name, first_name
-}
-
-func InsertStatement(db *sql.DB, last_name *string, first_name *string) {
-	res, err := db.Exec("INSERT INTO employee (last_name, first_name) VALUES (?, ?)", last_name, first_name)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	rowCount, err := res.RowsAffected()
-
-	if err != nil {
-		panic(err.Error())
-	}
-
-	fmt.Printf("Nombre de lignes affectées : %d", rowCount)
-}
-
-func DeleteStatement(db *sql.DB, id *int) {
-	res, err := db.Exec("DELETE FROM employee WHERE id = ?", id)
-	if err != nil {
-		panic(err.Error())
-	} else if err == sql.ErrNoRows {
-		panic("L'id n'existe pas")
-	}
-
-	rowCount, err := res.RowsAffected()
-
-	if err != nil {
-		panic(err.Error())
-	}
-
-	fmt.Printf("Nombre de lignes supprimées : %d", rowCount)
 }
